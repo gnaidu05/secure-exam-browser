@@ -74,8 +74,19 @@ const sendUi = (msg) => { if (state.win && !state.win.isDestroyed()) state.win.w
 function loadConfig() {
   // In an installed build the config is fixed inside the app package; SEB_CONFIG only works in unpackaged dev mode.
   const dir = DEV && process.env.SEB_CONFIG ? path.dirname(process.env.SEB_CONFIG) : path.join(__dirname, '..', 'config');
-  const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8'));
-  const publicKey = crypto.createPublicKey(fs.readFileSync(path.join(dir, 'public-key.pem')));
+
+  const configPath = path.join(dir, 'config.json');
+  const keyPath = path.join(dir, 'public-key.pem');
+  if (!fs.existsSync(configPath) || !fs.existsSync(keyPath)) {
+    throw new Error(
+      `This copy of the browser was built without its server settings (missing ${path.basename(fs.existsSync(configPath) ? keyPath : configPath)}).\n\n` +
+      'Whoever built this installer needs to put your exam server\'s address in client/config/config.json ' +
+      'and its signing key in client/config/public-key.pem, then rebuild. See the project README, ' +
+      '"Build the installers".'
+    );
+  }
+  const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const publicKey = crypto.createPublicKey(fs.readFileSync(keyPath));
   const u = new URL(cfg.serverUrl);
   const isLocal = ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname);
   if (u.protocol !== 'https:' && !isLocal && !cfg.allowInsecureServer) {
