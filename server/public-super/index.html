@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform Admin - Institutes</title>
+<style>
+  :root { --bg:#f5f6f8; --panel:#fff; --ink:#14181f; --muted:#667085; --line:#e3e6eb; --accent:#2453d6; --ok:#1b7f4b; --bad:#c62828; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1218; --panel:#171b23; --ink:#e8ebf0; --muted:#96a0af; --line:#262c37; --accent:#6b93ff; --ok:#4cc38a; --bad:#ff7b72; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { padding:16px 24px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  header h1 { font-size:16px; margin:0; }
+  main { max-width: 900px; margin: 24px auto; padding: 0 20px; display: grid; gap: 20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px 20px; }
+  .card h2 { margin:0 0 12px; font-size:14px; }
+  form { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  label { display:grid; gap:4px; font-size:12px; color:var(--muted); font-weight:600; }
+  input { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); min-width:180px; }
+  button { font:inherit; padding:8px 14px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; font-weight:600; }
+  button.secondary { background:transparent; color:var(--ink); border-color:var(--line); }
+  button.danger { background:transparent; color:var(--bad); border-color:var(--bad); }
+  table { width:100%; border-collapse:collapse; margin-top:6px; }
+  th, td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
+  th { color:var(--muted); font-size:11px; text-transform:uppercase; }
+  .muted { color:var(--muted); }
+  code { background:var(--bg); padding:2px 6px; border-radius:4px; font-size:12.5px; }
+  .result { margin-top:14px; padding:12px 14px; border-radius:8px; border:1px solid var(--ok); background:color-mix(in srgb, var(--ok) 12%, transparent); font-size:13px; display:grid; gap:6px; }
+  .result b { color: var(--ok); }
+  .err { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+  .pill { padding:1px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  .pill.on { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .pill.off { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+  .row-actions { display:flex; gap:6px; flex-wrap: wrap; }
+  .row-actions button { padding: 4px 10px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header><h1>Secure Exam Browser - Platform Admin</h1></header>
+<main>
+  <section class="card">
+    <h2>Create a new institute</h2>
+    <form id="createForm">
+      <label>Institute name<input id="name" required placeholder="e.g. St. Xavier's College"></label>
+      <label>Dashboard login username<input id="adminUser" placeholder="admin"></label>
+      <label>URL code (optional)<input id="slug" placeholder="auto from name"></label>
+      <button type="submit">Create institute</button>
+    </form>
+    <div id="createResult"></div>
+  </section>
+
+  <section class="card">
+    <h2>Institutes <span id="count" class="muted"></span></h2>
+    <table>
+      <thead><tr><th>Name</th><th>Code</th><th>Login</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="listEmpty" class="muted" hidden style="padding:10px 0;">No institutes yet - create one above.</div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const api = (p, opts) => fetch(p, { credentials: 'same-origin', ...opts }).then(async (r) => {
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.message || body.error || ('HTTP ' + r.status));
+    return body;
+  });
+
+  function resultBox(html, isError) {
+    const el = document.createElement('div');
+    el.className = 'result' + (isError ? ' err' : '');
+    el.innerHTML = html;
+    return el;
+  }
+
+  async function refresh() {
+    const list = await api('/super/api/institutes');
+    $('#count').textContent = list.length ? `(${list.length})` : '';
+    $('#listEmpty').hidden = list.length > 0;
+    $('#rows').innerHTML = list.map((i) => `
+      <tr data-slug="${esc(i.slug)}">
+        <td>${esc(i.name)}</td>
+        <td><code>${esc(i.slug)}</code></td>
+        <td>${esc(i.adminUser)}</td>
+        <td><span class="pill ${i.disabled ? 'off' : 'on'}">${i.disabled ? 'disabled' : 'active'}</span></td>
+        <td class="muted">${new Date(i.createdAt).toLocaleDateString()}</td>
+        <td><div class="row-actions">
+          <button type="button" data-act="dash">Dashboard link</button>
+          <button type="button" data-act="key">Download key</button>
+          <button type="button" data-act="reset">Reset password</button>
+          <button type="button" class="danger" data-act="toggle">${i.disabled ? 'Enable' : 'Disable'}</button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  $('#createForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const box = $('#createResult');
+    box.innerHTML = '';
+    try {
+      const r = await api('/super/api/institutes', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name: $('#name').value, adminUser: $('#adminUser').value, slug: $('#slug').value }),
+      });
+      box.appendChild(resultBox(`
+        <div><b>${esc(r.name)}</b> created.</div>
+        <div>Dashboard: <code>${esc(r.dashboardUrl)}</code></div>
+        <div>Login: <code>${esc(r.adminUser)}</code> / <code>${esc(r.adminPassword)}</code></div>
+        <div class="muted">${esc(r.note)} Give the dashboard link + login to this institute's exam admin, and
+        the public key (button in the table below) to whoever builds their exam browser installer.</div>
+      `));
+      $('#createForm').reset();
+      refresh();
+    } catch (err) { box.appendChild(resultBox(esc(err.message), true)); }
+  });
+
+  $('#rows').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const slug = btn.closest('tr').dataset.slug;
+    const act = btn.dataset.act;
+    try {
+      if (act === 'dash') {
+        const url = new URL(`/i/${slug}/admin/`, location.href).href;
+        await navigator.clipboard.writeText(url).catch(() => {});
+        alert('Dashboard link (copied to clipboard):\n' + url);
+      } else if (act === 'key') {
+        const a = document.createElement('a');
+        a.href = `/super/api/institutes/${encodeURIComponent(slug)}/public-key`;
+        a.click();
+      } else if (act === 'reset') {
+        if (!confirm('Reset this institute\'s dashboard password? The old password stops working immediately.')) return;
+        const r = await api(`/super/api/institutes/${encodeURIComponent(slug)}/reset-password`, { method: 'POST' });
+        alert('New password:\n' + r.adminPassword + '\n\nSave it now - it will not be shown again.');
+      } else if (act === 'toggle') {
+        const disable = btn.textContent.trim() === 'Disable';
+        if (disable && !confirm('Disable this institute? Its exam browsers will stop working until re-enabled.')) return;
+        await api(`/super/api/institutes/${encodeURIComponent(slug)}/disable`, {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ disabled: disable }),
+        });
+        refresh();
+      }
+    } catch (err) { alert(err.message); }
+  });
+
+  refresh();
+})();
+</script>
+</body>
+</html>

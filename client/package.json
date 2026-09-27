@@ -1,0 +1,66 @@
+{
+  "name": "secure-exam-browser",
+  "productName": "Secure Exam Browser",
+  "version": "1.0.0",
+  "description": "Locked-down kiosk browser for proctored online exams: domain/port whitelist, no extensions, violation alerts with full-screen capture.",
+  "main": "src/main.js",
+  "author": "Exam Platform Team <exam-admin@example.edu>",
+  "homepage": "https://exams.example.edu",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "node scripts/dev.js",
+    "test": "node --test",
+    "dist:win": "electron-builder --win --x64",
+    "dist:linux": "electron-builder --linux --x64"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^1.8.0",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "edu.example.secure-exam-browser",
+    "productName": "Secure Exam Browser",
+    "artifactName": "SecureExamBrowser-${version}-${os}-${arch}.${ext}",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "config/**/*",
+      "package.json"
+    ],
+    "afterPack": "build/afterPack.js",
+    "publish": null,
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": true
+    },
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage"
+      ],
+      "category": "Education",
+      "executableName": "secure-exam-browser",
+      "synopsis": "Locked-down exam browser",
+      "maintainer": "Exam Platform Team <exam-admin@example.edu>"
+    }
+  }
+}

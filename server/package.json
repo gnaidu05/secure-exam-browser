@@ -1,0 +1,31 @@
+{
+  "name": "exam-admin-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Admin server for the Secure Exam Browser: serves signed whitelist policies, receives violation alerts with screenshots, live dashboard.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "central": "node central.js",
+    "keygen": "node scripts/keygen.js",
+    "test": "node --test",
+    "build:standalone": "node scripts/build-standalone.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.22.0",
+    "esbuild": "^0.28.2",
+    "postject": "^1.0.0-alpha.6"
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*",
+      "public-super/**/*"
+    ]
+  }
+}

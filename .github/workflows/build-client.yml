@@ -1,0 +1,41 @@
+name: Build installers
+
+# Builds the Windows installer and the Ubuntu .deb / AppImage.
+# Before running: commit client/config/config.json (your https server URL) and
+# client/config/public-key.pem (from server/data/keys/public.pem).
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+          - os: ubuntu-22.04
+            script: dist:linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run ${{ matrix.script }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.os }}
+          path: |
+            client/dist/*.exe
+            client/dist/*.deb
+            client/dist/*.AppImage

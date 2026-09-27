@@ -1,0 +1,19 @@
+{
+  "DEMO101": {
+    "title": "Demo Assessment",
+    "startUrl": "https://example.com/",
+    "allow": [
+      { "host": "example.com", "ports": [443] },
+      { "host": "*.example.com", "ports": [443] }
+    ],
+    "durationMinutes": 60,
+    "exitCode": "FINISH-1234",
+    "opensAt": null,
+    "closesAt": null,
+    "students": null,
+    "settings": {
+      "allowClipboard": false
+    },
+    "blockedProcesses": null
+  }
+}

@@ -1,0 +1,19 @@
+# Secure Exam Browser - admin server settings
+# Edit this file with Notepad (or any text editor), save, then restart the server.
+# Lines starting with # are ignored.
+
+# The password for https://your-server/admin/  --  CHANGE THIS before a real exam.
+ADMIN_PASSWORD=change-me-please
+
+# The dashboard login username.
+ADMIN_USER=admin
+
+# The network port the server listens on.
+PORT=8443
+
+# Uncomment and set these two if you have a real SSL certificate (recommended for a
+# real exam reachable over the internet). Leave them commented out for a quick test
+# on a school LAN, or if you are putting this behind another server (like Nginx or
+# Cloudflare) that already handles HTTPS.
+# TLS_KEY=C:\certs\exam.key
+# TLS_CERT=C:\certs\exam.crt

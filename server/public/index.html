@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exam Monitor</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --ink: #14181f; --muted: #667085; --line: #e3e6eb;
+    --accent: #2453d6; --high: #c62828; --med: #b45f06; --low: #5b6675; --ok: #1b7f4b;
+    --high-bg: #fdecec; --med-bg: #fff3e0; --low-bg: #eef0f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1218; --panel: #171b23; --ink: #e8ebf0; --muted: #96a0af; --line: #262c37;
+      --accent: #6b93ff; --high: #ff7b72; --med: #f0a95a; --low: #9aa5b5; --ok: #4cc38a;
+      --high-bg: #3a1c1c; --med-bg: #3a2a15; --low-bg: #222833;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+  .live { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--low); display: inline-block; }
+  .dot.on { background: var(--ok); } .dot.off { background: var(--high); }
+  .spacer { flex: 1; }
+  select, button, input { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+  button { cursor: pointer; } button:hover { border-color: var(--accent); }
+  button.danger { color: var(--high); border-color: var(--high); }
+  button.danger:hover { background: var(--high-bg); }
+  main { display: grid; grid-template-columns: minmax(420px, 1fr) minmax(360px, 1.1fr); gap: 16px; padding: 16px 20px; align-items: start; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .card > h2 { margin: 0; padding: 12px 16px; font-size: 13px; font-weight: 650; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  tbody tr { cursor: pointer; } tbody tr:hover { background: var(--bg); } tbody tr.sel { background: var(--low-bg); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .pill.online { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .pill.offline, .pill.terminating { background: var(--high-bg); color: var(--high); }
+  .pill.ended { background: var(--low-bg); color: var(--low); }
+  .sev { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 650; text-transform: uppercase; }
+  .sev.high { background: var(--high-bg); color: var(--high); } .sev.medium { background: var(--med-bg); color: var(--med); } .sev.low { background: var(--low-bg); color: var(--low); }
+  .badge { font-weight: 650; } .badge.hi { color: var(--high); }
+  .empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+  .detail-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+  .detail-head .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .detail-head .name { font-size: 16px; font-weight: 650; }
+  .alerts { max-height: 70vh; overflow: auto; }
+  .alert { padding: 12px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+  .alert:last-child { border-bottom: 0; }
+  .alert .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .alert .type { font-weight: 650; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  .alert .detail { word-break: break-word; }
+  .shots { display: flex; gap: 8px; flex-wrap: wrap; }
+  .shots a { display: block; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; width: 150px; }
+  .shots img { display: block; width: 100%; height: 90px; object-fit: cover; }
+  .shots span { display: block; padding: 2px 6px; font-size: 11px; color: var(--muted); background: var(--bg); }
+  details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details pre { margin: 6px 0 0; padding: 8px; background: var(--bg); border-radius: 6px; font-size: 11.5px; overflow: auto; max-height: 200px; }
+  .toast-wrap { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 10; }
+  .toast { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--high); border-radius: 8px; padding: 10px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.18); max-width: 340px; cursor: pointer; }
+  .toast.medium { border-left-color: var(--med); } .toast.low { border-left-color: var(--low); }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; align-items: center; justify-content: center; z-index: 20; padding: 20px; }
+  .lightbox.open { display: flex; } .lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Exam Monitor</h1>
+  <span class="live"><span id="liveDot" class="dot"></span><span id="liveText">connecting…</span></span>
+  <span class="spacer"></span>
+  <label class="small muted">Exam <select id="examFilter"><option value="">All</option></select></label>
+  <label class="small muted"><input type="checkbox" id="sound" checked> sound on high alerts</label>
+  <a href="/api/admin/export.csv"><button type="button">Export CSV</button></a>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Sessions <span id="count" class="muted small"></span></h2>
+    <table>
+      <thead><tr><th>Student</th><th>Exam</th><th>Status</th><th>Alerts</th><th>Last seen</th></tr></thead>
+      <tbody id="sessions"></tbody>
+    </table>
+    <div id="sessionsEmpty" class="empty" hidden>No sessions yet. They appear when a student signs in from the Secure Exam Browser.</div>
+  </section>
+
+  <section class="card" id="detailCard">
+    <h2>Session detail</h2>
+    <div id="detail" class="empty">Select a session to see its alerts and screenshots.</div>
+  </section>
+</main>
+
+<div class="toast-wrap" id="toasts"></div>
+<div class="lightbox" id="lightbox"><img alt="Screenshot"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const state = { sessions: new Map(), alerts: [], selected: null, exam: '' };
+
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmtTime = (ms) => ms ? new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
+  const fmtDT = (ms) => ms ? new Date(ms).toLocaleString() : '-';
+  const ago = (ms) => {
+    const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    if (s < 60) return s + 's ago'; if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    return Math.floor(s / 3600) + 'h ago';
+  };
+  const api = (p, opts) => fetch(p, { credentials: 'same-origin', ...opts }).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+
+  // ---- rendering -----------------------------------------------------------
+  function renderSessions() {
+    const rows = [...state.sessions.values()]
+      .filter((s) => !state.exam || s.examCode === state.exam)
+      .sort((a, b) => b.lastSeen - a.lastSeen);
+    $('#count').textContent = rows.length ? `(${rows.length})` : '';
+    $('#sessionsEmpty').hidden = rows.length > 0;
+    $('#sessions').innerHTML = rows.map((s) => `
+      <tr data-id="${esc(s.id)}" class="${s.id === state.selected ? 'sel' : ''}">
+        <td><div><b>${esc(s.studentName)}</b></div><div class="muted small">${esc(s.studentId)} · ${esc(s.device?.hostname)}</div></td>
+        <td>${esc(s.examCode)}</td>
+        <td><span class="pill ${esc(s.status)}">${esc(s.status)}</span></td>
+        <td><span class="badge ${s.highCount ? 'hi' : ''}">${s.alertCount}</span>${s.highCount ? ` <span class="muted small">(${s.highCount} high)</span>` : ''}</td>
+        <td class="muted small">${esc(ago(s.lastSeen))}</td>
+      </tr>`).join('');
+  }
+
+  function alertHtml(a) {
+    const shots = (a.shots || []).map((sh) =>
+      `<a href="/api/admin/shots/${encodeURIComponent(sh.file)}" data-shot="/api/admin/shots/${encodeURIComponent(sh.file)}">
+         <img loading="lazy" src="/api/admin/shots/${encodeURIComponent(sh.file)}" alt=""><span>${esc(sh.label || 'screenshot')}</span></a>`).join('');
+    const ctx = a.context ? JSON.stringify(a.context, null, 2) : '';
+    const log = (a.log || []).map((e) => `${e.t}  ${e.type}  ${e.detail}`).join('\n');
+    return `
+      <div class="alert">
+        <div class="top"><span class="sev ${esc(a.severity)}">${esc(a.severity)}</span><span class="type">${esc(a.type)}</span>
+          <span class="muted small">${esc(fmtTime(a.receivedAt))}${a.source === 'server' ? ' · server' : ''}</span></div>
+        <div class="detail">${esc(a.detail)}</div>
+        ${a.url ? `<div class="muted small">on ${esc(a.url)}</div>` : ''}
+        ${shots ? `<div class="shots">${shots}</div>` : ''}
+        ${(ctx || log) ? `<details><summary>Session details &amp; recent events</summary>${ctx ? `<pre>${esc(ctx)}</pre>` : ''}${log ? `<pre>${esc(log)}</pre>` : ''}</details>` : ''}
+      </div>`;
+  }
+
+  function renderDetail() {
+    const s = state.sessions.get(state.selected);
+    if (!s) { $('#detail').className = 'empty'; $('#detail').textContent = 'Select a session to see its alerts and screenshots.'; return; }
+    const d = s.device || {};
+    const canTerminate = s.status === 'online' || s.status === 'offline';
+    $('#detail').className = '';
+    $('#detail').innerHTML = `
+      <div class="detail-head">
+        <div class="row"><span class="name">${esc(s.studentName)}</span><span class="pill ${esc(s.status)}">${esc(s.status)}</span><span class="spacer"></span>
+          ${canTerminate ? '<button class="danger" id="terminate">End session</button>' : ''}
+          <a href="/api/admin/export.csv?sessionId=${encodeURIComponent(s.id)}"><button type="button">CSV</button></a></div>
+        <div class="muted small">${esc(s.studentId)} · ${esc(s.examCode)} · started ${esc(fmtDT(s.startedAt))}${s.endsAt ? ' · ends ' + esc(fmtTime(s.endsAt)) : ''}</div>
+        <div class="muted small">${esc(d.hostname)} (${esc(d.username)}) · ${esc(d.platform)} ${esc(d.osRelease)} ${d.sessionType ? '· ' + esc(d.sessionType) : ''} · ${esc((d.ips || []).join(', '))} · v${esc(d.appVersion)}</div>
+        ${s.endReason ? `<div class="muted small">Ended: ${esc(s.endReason)}</div>` : ''}
+      </div>
+      <div class="alerts" id="alertList">${state.alerts.length ? state.alerts.map(alertHtml).join('') : '<div class="empty">No alerts for this session.</div>'}</div>`;
+    const t = $('#terminate');
+    if (t) t.onclick = async () => {
+      const reason = prompt('Message shown to the student:', 'Your session has been ended by the invigilator.');
+      if (reason === null) return;
+      await api(`/api/admin/sessions/${encodeURIComponent(s.id)}/terminate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reason }) });
+    };
+  }
+
+  async function select(id) {
+    state.selected = id;
+    state.alerts = [];
+    renderSessions(); renderDetail();
+    state.alerts = await api(`/api/admin/alerts?sessionId=${encodeURIComponent(id)}&limit=300`);
+    if (state.selected === id) renderDetail();
+  }
+
+  // ---- toasts / sound --------------------------------------------------------
+  let audioCtx;
+  function beep() {
+    if (!$('#sound').checked) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 880; g.gain.value = 0.08; o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.18);
+    } catch { /* autoplay blocked */ }
+  }
+  function toast(alert, session) {
+    const el = document.createElement('div');
+    el.className = 'toast ' + alert.severity;
+    el.innerHTML = `<b>${esc(session?.studentName || alert.studentName)}</b> · <span class="small">${esc(alert.type)}</span><div class="small muted">${esc(alert.detail).slice(0, 120)}</div>`;
+    el.onclick = () => { select(alert.sessionId); el.remove(); };
+    $('#toasts').appendChild(el);
+    setTimeout(() => el.remove(), 9000);
+    if (alert.severity === 'high') beep();
+  }
+
+  // ---- live stream -------------------------------------------------------------
+  function connect() {
+    const es = new EventSource('/api/admin/stream');
+    es.onopen = () => { $('#liveDot').className = 'dot on'; $('#liveText').textContent = 'live'; refresh(); };
+    es.onerror = () => { $('#liveDot').className = 'dot off'; $('#liveText').textContent = 'reconnecting…'; };
+    es.addEventListener('session', (e) => { const s = JSON.parse(e.data); state.sessions.set(s.id, s); renderSessions(); if (s.id === state.selected) renderDetail(); });
+    es.addEventListener('alert', (e) => {
+      const { alert, session } = JSON.parse(e.data);
+      state.sessions.set(session.id, session);
+      if (alert.sessionId === state.selected) state.alerts.unshift(alert);
+      renderSessions(); if (alert.sessionId === state.selected) renderDetail();
+      toast(alert, session);
+    });
+  }
+
+  async function refresh() {
+    const list = await api('/api/admin/sessions');
+    state.sessions = new Map(list.map((s) => [s.id, s]));
+    renderSessions();
+    if (state.selected) renderDetail();
+  }
+
+  async function loadExams() {
+    try {
+      const exams = await api('/api/admin/exams');
+      $('#examFilter').insertAdjacentHTML('beforeend', exams.map((e) => `<option value="${esc(e.code)}">${esc(e.code)}${e.title ? ' – ' + esc(e.title) : ''}</option>`).join(''));
+    } catch { /* optional */ }
+  }
+
+  // ---- events --------------------------------------------------------------------
+  $('#sessions').addEventListener('click', (e) => { const tr = e.target.closest('tr'); if (tr) select(tr.dataset.id); });
+  $('#examFilter').addEventListener('change', (e) => { state.exam = e.target.value; renderSessions(); });
+  $('#detail').addEventListener('click', (e) => {
+    const a = e.target.closest('[data-shot]');
+    if (!a) return; e.preventDefault();
+    $('#lightbox img').src = a.dataset.shot; $('#lightbox').classList.add('open');
+  });
+  $('#lightbox').addEventListener('click', () => $('#lightbox').classList.remove('open'));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#lightbox').classList.remove('open'); });
+  setInterval(renderSessions, 15000); // keep "last seen" fresh
+
+  loadExams(); refresh().catch(() => {}); connect();
+})();
+</script>
+</body>
+</html>

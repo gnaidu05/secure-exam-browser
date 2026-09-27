@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Secure Exam Browser</title>
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+
+<!-- Top bar (visible during the exam; the exam page sits directly below it) -->
+<header id="bar" hidden>
+  <div class="left">
+    <button id="back" title="Back" aria-label="Back">&#8592;</button>
+    <button id="forward" title="Forward" aria-label="Forward">&#8594;</button>
+    <button id="reload" title="Reload" aria-label="Reload">&#8635;</button>
+    <button id="home" title="Exam home" aria-label="Exam home">Home</button>
+  </div>
+  <div class="mid">
+    <span id="examTitle" class="title"></span>
+    <span id="who" class="who"></span>
+  </div>
+  <div class="right">
+    <span id="warn" class="warn" role="status" aria-live="polite"></span>
+    <span id="conn" class="conn ok" title="Connection to exam server"><i></i><span id="connText">connected</span></span>
+    <span id="timer" class="timer" hidden></span>
+    <button id="finish" class="primary">Finish exam</button>
+  </div>
+</header>
+
+<!-- Login / consent -->
+<main id="login">
+  <form id="loginForm" autocomplete="off" novalidate>
+    <h1>Secure Exam Browser</h1>
+    <p class="sub">Sign in to start your exam.</p>
+
+    <div id="envWarn" class="notice" hidden></div>
+
+    <label>Exam code<input id="examCode" required maxlength="64" autocapitalize="characters" spellcheck="false"></label>
+    <label>Student ID<input id="studentId" required maxlength="64" spellcheck="false"></label>
+    <label>Full name<input id="studentName" required maxlength="100" spellcheck="false"></label>
+
+    <div class="consent">
+      <strong>Monitoring notice</strong>
+      <p>While this exam is running, only the exam website can be opened. Switching windows, using copy/paste,
+      screenshots, developer tools or blocked sites is recorded. When that happens, a screenshot of your
+      <b>entire screen</b>, your name, ID, computer name, network address and a short activity log are sent
+      to your institution's exam administrator.</p>
+      <label class="check"><input type="checkbox" id="consent"> I understand and agree.</label>
+    </div>
+
+    <div id="error" class="error" role="alert" hidden></div>
+    <div class="actions">
+      <button type="submit" id="startBtn" class="primary">Start exam</button>
+      <button type="button" id="quitBtn">Quit</button>
+    </div>
+    <p class="foot" id="ver"></p>
+  </form>
+</main>
+
+<!-- Exit dialog (the exam view is hidden while it is open) -->
+<div id="exitModal" class="modal" hidden>
+  <div class="dialog">
+    <h2>Finish exam</h2>
+    <p>Enter the exit code given by your invigilator. This submits your session and closes the browser.</p>
+    <input id="exitCode" maxlength="100" autocomplete="off" spellcheck="false" placeholder="Exit code">
+    <div id="exitError" class="error" hidden></div>
+    <div class="actions">
+      <button id="exitOk" class="primary">Finish</button>
+      <button id="exitCancel">Back to exam</button>
+    </div>
+  </div>
+</div>
+
+<!-- End screen -->
+<div id="endScreen" class="modal solid" hidden>
+  <div class="dialog"><h2 id="endTitle">Session ended</h2><p id="endText"></p></div>
+</div>
+
+<script src="shell.js"></script>
+</body>
+</html>

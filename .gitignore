@@ -1,0 +1,6 @@
+node_modules/
+dist/
+server/data/
+*.log
+# Your institution's public key and server URL ARE meant to be committed (client/config/); the private key is not:
+**/private.pem

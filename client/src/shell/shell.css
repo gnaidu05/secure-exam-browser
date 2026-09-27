@@ -1,0 +1,51 @@
+:root {
+  --bg: #0b1020; --panel: #131a2e; --line: #26304d; --ink: #e8ecf8; --muted: #93a0c0;
+  --accent: #5b8cff; --danger: #ff6b6b; --ok: #44d19a; --warn: #ffb454;
+  --bar: 44px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, "Segoe UI", Roboto, Ubuntu, sans-serif; user-select: none; overflow: hidden; }
+[hidden] { display: none !important; }
+
+button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button:disabled { opacity: .6; cursor: default; }
+input[type=text], input:not([type]), input:not([type=checkbox]) { font: inherit; color: var(--ink); background: #0d1326; border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; width: 100%; user-select: text; }
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* top bar */
+#bar { position: fixed; inset: 0 0 auto 0; height: var(--bar); display: flex; align-items: center; gap: 12px; padding: 0 10px; background: var(--panel); border-bottom: 1px solid var(--line); z-index: 5; }
+#bar .left, #bar .right { display: flex; align-items: center; gap: 6px; }
+#bar .left button { padding: 4px 10px; }
+#bar .mid { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: baseline; overflow: hidden; }
+#bar .title { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#bar .who { color: var(--muted); white-space: nowrap; }
+.warn { color: var(--warn); font-weight: 600; max-width: 34ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity .25s; }
+.warn.show { opacity: 1; }
+.conn { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.conn i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; }
+.conn.bad i { background: var(--danger); } .conn.bad { color: var(--danger); }
+.timer { font-variant-numeric: tabular-nums; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: #0d1326; border: 1px solid var(--line); }
+.timer.low { color: var(--danger); border-color: var(--danger); }
+
+/* login */
+#login { height: 100%; display: grid; place-items: center; padding: 24px; overflow: auto; }
+#loginForm { width: min(520px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 28px; display: grid; gap: 14px; }
+h1 { margin: 0; font-size: 22px; } .sub { margin: -8px 0 4px; color: var(--muted); }
+label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.consent { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: #0d1326; font-size: 13px; color: var(--muted); }
+.consent p { margin: 6px 0 10px; } .consent strong { color: var(--ink); }
+label.check { display: flex; align-items: center; gap: 8px; text-transform: none; font-size: 13px; letter-spacing: 0; color: var(--ink); cursor: pointer; }
+label.check input { width: 16px; height: 16px; }
+.actions { display: flex; gap: 10px; }
+.error { color: var(--danger); background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.4); border-radius: 6px; padding: 8px 10px; }
+.notice { color: var(--warn); background: rgba(255,180,84,.1); border: 1px solid rgba(255,180,84,.4); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+.foot { margin: 0; color: var(--muted); font-size: 12px; }
+
+/* modals */
+.modal { position: fixed; inset: 0; background: rgba(6,9,18,.86); display: grid; place-items: center; z-index: 10; padding: 24px; }
+.modal.solid { background: var(--bg); }
+.dialog { width: min(440px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: grid; gap: 12px; }
+.dialog h2 { margin: 0; } .dialog p { margin: 0; color: var(--muted); }
