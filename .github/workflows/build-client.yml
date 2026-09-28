@@ -1,10 +1,10 @@
 name: Build installers
 
-# Manual runs make downloadable Windows packages without anyone using npm locally.
-# A version tag also builds the same artifacts for release.
+# Every approved update to main produces fresh downloadable packages.
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     tags: ['v*']
 
 jobs:
