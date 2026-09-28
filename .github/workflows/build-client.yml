@@ -50,7 +50,7 @@ jobs:
           npm prune --omit=dev
           New-Item -ItemType Directory -Force -Path dist-portable | Out-Null
           Copy-Item (node -p "process.execPath") dist-portable/node.exe
-          Copy-Item central.js,server.js,settings.txt -Destination dist-portable
+          Copy-Item central.js,server.js,central-settings.txt -Destination dist-portable
           Copy-Item lib,public,public-super,config,node_modules -Destination dist-portable -Recurse
           @'
           @echo off
