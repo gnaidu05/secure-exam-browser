@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exam setup</title>
+<style>
+:root{--bg:#f5f6f8;--panel:#fff;--ink:#14181f;--muted:#667085;--line:#e3e6eb;--accent:#2453d6;--danger:#c62828}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif} header{padding:14px 20px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:center}h1{font-size:16px;margin:0}.spacer{flex:1} main{max-width:1000px;margin:22px auto;padding:0 18px;display:grid;grid-template-columns:280px 1fr;gap:18px}@media(max-width:760px){main{grid-template-columns:1fr}}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}h2{font-size:15px;margin:0 0 14px}button,input,textarea{font:inherit;border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--ink);background:#fff}button{cursor:pointer}button.primary{background:var(--accent);border-color:var(--accent);color:white}button.danger{color:var(--danger);border-color:var(--danger)}button.full{width:100%;margin-bottom:9px}.exam{padding:9px 8px;border-bottom:1px solid var(--line);cursor:pointer}.exam:hover,.exam.sel{background:#eef3ff}.muted{color:var(--muted)}label{display:grid;gap:5px;font-weight:600;margin:0 0 12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}textarea{min-height:92px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px}.hint{font-size:12px;color:var(--muted);font-weight:400}.actions{display:flex;gap:8px;align-items:center;margin-top:16px}.message{margin-top:12px;padding:10px;border-radius:6px;background:#eaf7ee;color:#17643a;display:none}.message.error{background:#fdecec;color:#9d2525}
+</style>
+</head>
+<body>
+<header><h1>Exam setup</h1><span class="muted">Create and manage whitelisted assessments</span><span class="spacer"></span><a href="./"><button>Back to monitor</button></a></header>
+<main>
+ <aside class="card"><h2>Exams</h2><button id="new" class="primary full">+ Create exam</button><div id="list" class="muted">Loading…</div></aside>
+ <section class="card"><h2 id="heading">Create exam</h2>
+  <form id="form">
+   <label>Exam code <input id="code" required pattern="[A-Za-z0-9_-]{2,64}" placeholder="e.g. DEMO101"><span class="hint">Letters, numbers, hyphens or underscores only.</span></label>
+   <label>Exam title <input id="title" required placeholder="e.g. Demo Assessment"></label>
+   <label>Exam start URL <input id="startUrl" required type="url" placeholder="https://exam.example.com/start"></label>
+   <label>Allowed site URLs <textarea id="allowedUrls" placeholder="https://exam.example.com&#10;https://cdn.example.com"></textarea><span class="hint">One full URL per line. The start website is always added automatically. Each domain and port is enforced exactly.</span></label>
+   <div class="two"><label>Duration (minutes)<input id="duration" type="number" min="1" max="1440" value="60" required></label><label>Exit code <input id="exitCode" placeholder="e.g. FINISH-1234"></label></div>
+   <label>Allowed student IDs <textarea id="students" placeholder="Leave blank to allow any student ID&#10;S001&#10;S002"></textarea><span class="hint">One ID per line. Leave blank for an open test.</span></label>
+   <label style="display:flex;grid-template-columns:auto 1fr;align-items:center;gap:8px"><input id="clipboard" type="checkbox"> Allow copy and paste for this exam</label>
+   <div class="actions"><button class="primary" type="submit">Save exam</button><button id="delete" class="danger" type="button" hidden>Delete exam</button><span class="muted">Changes apply to new student sign-ins immediately.</span></div>
+   <div id="message" class="message"></div>
+  </form>
+ </section>
+</main>
+<script>
+(()=>{'use strict';const $=s=>document.querySelector(s);let exams=[],selected=null;const api=(p,o)=>fetch(p,{credentials:'same-origin',...o}).then(async r=>{const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.message||'Request failed');return b});const val=id=>$('#'+id).value.trim();const set=(id,v)=>$('#'+id).value=v??'';function msg(t,bad=false){const e=$('#message');e.textContent=t;e.className='message'+(bad?' error':'');e.style.display='block';setTimeout(()=>e.style.display='none',4000)}function render(){const l=$('#list');l.innerHTML=exams.length?exams.map(e=>'<div class="exam '+(e.code===selected?'sel':'')+'" data-code="'+e.code+'"><b>'+e.code+'</b><br><span class="muted">'+e.title+'</span></div>').join(''):'<span class="muted">No exams yet.</span>';l.querySelectorAll('.exam').forEach(x=>x.onclick=()=>edit(x.dataset.code))}function clear(){selected=null;$('#heading').textContent='Create exam';$('#form').reset();set('duration','60');$('#delete').hidden=true;render()}function edit(code){const e=exams.find(x=>x.code===code);if(!e)return;selected=code;$('#heading').textContent='Edit '+code;set('code',e.code);set('title',e.title);set('startUrl',e.startUrl);set('allowedUrls',(e.allowedUrls||[]).join('\n'));set('duration',e.durationMinutes||60);set('exitCode',e.exitCode);set('students',(e.students||[]).join('\n'));$('#clipboard').checked=!!e.allowClipboard;$('#delete').hidden=false;render()}async function load(){exams=await api('../api/admin/exam-config');render();if(exams.length)edit(exams[0].code)}$('#new').onclick=clear;$('#form').onsubmit=async e=>{e.preventDefault();try{const code=val('code').toUpperCase();await api('../api/admin/exams/'+encodeURIComponent(code),{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({title:val('title'),startUrl:val('startUrl'),allowedUrls:val('allowedUrls').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),durationMinutes:Number(val('duration')),exitCode:val('exitCode'),students:val('students').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),allowClipboard:$('#clipboard').checked})});await load();edit(code);msg('Exam saved.')}catch(x){msg(x.message,true)}};$('#delete').onclick=async()=>{if(!selected||!confirm('Delete '+selected+'?'))return;try{await api('../api/admin/exams/'+encodeURIComponent(selected),{method:'DELETE'});await load();clear();msg('Exam deleted.')}catch(x){msg(x.message,true)}};load().catch(x=>msg(x.message,true));})();
+</script>
+</body></html>
