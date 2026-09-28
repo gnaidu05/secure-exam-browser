@@ -294,6 +294,70 @@ function createTenant(opts) {
     try { res.json(Object.entries(loadExams()).map(([code, e]) => ({ code, title: e.title }))); } catch { res.json([]); }
   });
 
+  function normalizeExam(input) {
+    const code = str(input?.code, 64).trim().toUpperCase();
+    if (!/^[A-Z0-9][A-Z0-9_-]{1,63}$/.test(code)) throw new Error('Use 2–64 letters, numbers, hyphens or underscores for the exam code.');
+    const title = str(input?.title, 160).trim() || code;
+    let start;
+    try { start = new URL(str(input?.startUrl, 1000).trim()); } catch { throw new Error('Enter a valid exam start URL.'); }
+    if (!['https:', 'http:'].includes(start.protocol)) throw new Error('The exam start URL must use http or https.');
+    const rawAllowed = Array.isArray(input?.allowedUrls) ? input.allowedUrls : [];
+    const urls = [start.href, ...rawAllowed.map((v) => str(v, 1000).trim()).filter(Boolean)];
+    const rules = new Map();
+    for (const value of urls) {
+      let u;
+      try { u = new URL(value); } catch { throw new Error('Each allowed site must be a full URL, for example https://exam.example.com'); }
+      if (!['https:', 'http:'].includes(u.protocol)) throw new Error('Allowed sites must use http or https.');
+      const port = Number(u.port || (u.protocol === 'https:' ? 443 : 80));
+      const scheme = u.protocol.slice(0, -1);
+      const key = u.hostname.toLowerCase() + '|' + scheme;
+      if (!rules.has(key)) rules.set(key, { host: u.hostname.toLowerCase(), ports: [], schemes: [scheme] });
+      if (!rules.get(key).ports.includes(port)) rules.get(key).ports.push(port);
+    }
+    const durationMinutes = Number(input?.durationMinutes || 0);
+    if (!Number.isInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > 1440) throw new Error('Duration must be between 1 and 1440 minutes.');
+    const students = Array.isArray(input?.students) ? input.students.map((v) => str(v, 64).trim()).filter(Boolean).slice(0, 100000) : [];
+    return { code, exam: {
+      title, startUrl: start.href, allow: [...rules.values()], durationMinutes,
+      exitCode: str(input?.exitCode, 100).trim() || null,
+      opensAt: input?.opensAt ? str(input.opensAt, 64) : null, closesAt: input?.closesAt ? str(input.closesAt, 64) : null,
+      students: students.length ? students : null,
+      settings: { allowClipboard: input?.allowClipboard === true },
+      blockedProcesses: null,
+    }};
+  }
+
+  router.get('/api/admin/exam-config', adminAuth, (req, res) => {
+    try {
+      const exams = loadExams();
+      res.json(Object.entries(exams).map(([code, e]) => ({
+        code, title: e.title || code, startUrl: e.startUrl || '', durationMinutes: e.durationMinutes || 60,
+        exitCode: e.exitCode || '', opensAt: e.opensAt || '', closesAt: e.closesAt || '', students: e.students || [],
+        allowClipboard: !!e.settings?.allowClipboard,
+        allowedUrls: (e.allow || []).flatMap((r) => (r.ports || [443]).map((p) => `${(r.schemes || ['https'])[0]}://${r.host}${p === 443 && (r.schemes || ['https'])[0] === 'https' ? '' : p === 80 && (r.schemes || ['https'])[0] === 'http' ? '' : ':' + p}`)),
+      })));
+    } catch { res.status(500).json({ error: 'config_error', message: 'Could not read exam configuration.' }); }
+  });
+
+  router.put('/api/admin/exams/:code', adminAuth, express.json({ limit: '100kb' }), (req, res) => {
+    try {
+      const { code, exam } = normalizeExam({ ...req.body, code: req.params.code });
+      const exams = loadExams(); exams[code] = exam;
+      fs.writeFileSync(examsFile, JSON.stringify(exams, null, 2));
+      res.json({ ok: true, code });
+    } catch (e) { res.status(400).json({ error: 'invalid_exam', message: e.message || 'Invalid exam configuration.' }); }
+  });
+
+  router.delete('/api/admin/exams/:code', adminAuth, (req, res) => {
+    try {
+      const code = str(req.params.code, 64).trim().toUpperCase();
+      const exams = loadExams();
+      if (!exams[code]) return res.status(404).json({ error: 'not_found' });
+      delete exams[code]; fs.writeFileSync(examsFile, JSON.stringify(exams, null, 2));
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: 'config_error' }); }
+  });
+
   router.get('/api/admin/alerts', adminAuth, (req, res) => {
     const limit = Math.min(Number(req.query.limit) || 200, 1000);
     res.json(store.listAlerts({ sessionId: str(req.query.sessionId, 64) || undefined, limit }));
