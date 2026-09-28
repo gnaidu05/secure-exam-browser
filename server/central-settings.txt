@@ -1,0 +1,14 @@
+# Secure Exam Browser - central multi-institute server settings
+# Edit this file with Notepad, save, then restart Start-Central-Admin-Server.cmd.
+# Lines starting with # are ignored.
+
+# Platform dashboard login: http://localhost:8443/super/
+SUPER_ADMIN_USER=super
+SUPER_ADMIN_PASSWORD=change-me-before-first-use
+
+# Render sets PORT automatically in cloud. Keep this for local Windows use.
+PORT=8443
+
+# Local folder holding institute keys, policies, sessions, alerts and screenshots.
+# For cloud hosting, set DATA_DIR to the persistent disk mount path.
+# DATA_DIR=C:\SecureExamData
