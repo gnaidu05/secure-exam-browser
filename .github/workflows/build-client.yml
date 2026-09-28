@@ -44,11 +44,25 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
-      - run: npm run build:standalone
+      - name: Assemble self-contained admin server
+        shell: pwsh
+        run: |
+          npm prune --omit=dev
+          New-Item -ItemType Directory -Force -Path dist-portable | Out-Null
+          Copy-Item (node -p "process.execPath") dist-portable/node.exe
+          Copy-Item central.js,server.js,settings.txt -Destination dist-portable
+          Copy-Item lib,public,public-super,config,node_modules -Destination dist-portable -Recurse
+          @'
+          @echo off
+          cd /d "%~dp0"
+          start "" http://localhost:8443/super/
+          node.exe central.js
+          pause
+          '@ | Set-Content -Path dist-portable/Start-Central-Admin-Server.cmd -Encoding ASCII
       - uses: actions/upload-artifact@v4
         with:
           name: Admin-Server-Windows
-          path: server/dist-standalone/**
+          path: server/dist-portable/**
 
   student-ubuntu:
     name: Student Secure Browser (Ubuntu)
