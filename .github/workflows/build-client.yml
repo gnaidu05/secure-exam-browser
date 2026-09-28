@@ -1,24 +1,16 @@
 name: Build installers
 
-# Builds the Windows installer and the Ubuntu .deb / AppImage.
-# Before running: commit client/config/config.json (your https server URL) and
-# client/config/public-key.pem (from server/data/keys/public.pem).
+# Manual runs make downloadable Windows packages without anyone using npm locally.
+# A version tag also builds the same artifacts for release.
 on:
   workflow_dispatch:
   push:
     tags: ['v*']
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            script: dist:win
-          - os: ubuntu-22.04
-            script: dist:linux
-    runs-on: ${{ matrix.os }}
+  student-windows:
+    name: Student Secure Browser (Windows)
+    runs-on: windows-latest
     defaults:
       run:
         working-directory: client
@@ -31,11 +23,52 @@ jobs:
           cache-dependency-path: client/package-lock.json
       - run: npm ci
       - run: npm test
-      - run: npm run ${{ matrix.script }}
+      - run: npm run dist:win
       - uses: actions/upload-artifact@v4
         with:
-          name: installer-${{ matrix.os }}
+          name: Student-Secure-Browser-Windows
+          path: client/dist/*.exe
+
+  admin-windows:
+    name: Admin Server (Windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:standalone
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Admin-Server-Windows
+          path: server/dist-standalone/**
+
+  student-ubuntu:
+    name: Student Secure Browser (Ubuntu)
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run dist:linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Student-Secure-Browser-Ubuntu
           path: |
-            client/dist/*.exe
             client/dist/*.deb
             client/dist/*.AppImage
